@@ -28,6 +28,30 @@ class Client
         'debug_file'  => APPPATH . 'logs/swoole_debug.log',
     ];
 
+	private static $_instance = null;
+	private $client = null;
+
+	/**
+	 * Singleton magic :)
+	 */
+	private function __construct () {
+//		$client = new \Swoole\Client(SWOOLE_TCP);
+//		$this->client->set(TCPHelper::TCP_OPTIONS);
+//		$this->tcp_client->connect('127.0.0.1', 9502);
+	}
+
+	private function __clone () {}
+	private function __wakeup () {}
+
+	public static function get_instance()
+	{
+		if (self::$_instance === null) {
+			self::$_instance = new self();
+		}
+
+
+		return self::$_instance;
+	}
     // ------------------------------------------------------------------------------
 
     /**
@@ -39,7 +63,7 @@ class Client
      *     'params'  => [],               // params will be passed to your method
      * ];
      */
-    public static function send(array $data)
+    public static function send(array $data, $fd, callable $callback)
     {
         self::initConfig();
 
@@ -50,10 +74,18 @@ class Client
         /**
          * @property array $stamsel
          */
-        $client = new \Swoole\Client(SWOOLE_UNIX_STREAM, $mode);
+        switch ($mode) {
+			case SWOOLE_SOCK_ASYNC:
+				$client = new \Swoole\Coroutine\Client(SWOOLE_UNIX_STREAM);
+				break;
+			default:
+				$client = new \Swoole\Client(SWOOLE_UNIX_STREAM, $mode);
+		}
 
         // dynamic custom data
         $client->CiSwooleData = $data;
+        $client->response_to = $fd;
+        $client->callback = $callback;
 
         // set eof charactor
         $client->set(
@@ -137,6 +169,8 @@ class Client
      */
     public static function onReceive(\Swoole\Client $client, $data)
     {
+    	echo "Receive fuck\n";
+    	var_dump($data);
         return;
     }
 
@@ -149,6 +183,7 @@ class Client
      */
     public static function onClose(\Swoole\Client $client)
     {
+    	echo "Fuck, I closed :)\n";
         return;
     }
 
@@ -171,19 +206,37 @@ class Client
     /**
      * async mode init
      *
-     * @param \Swoole\Client $client
+     * @param \Swoole\Coroutine\Client $client
      */
-    private static function asyncInit(\Swoole\Client $client)
+    private static function asyncInit(\Swoole\Coroutine\Client $client)
     {
-        // event listener
-        $client->on('Close',       [Client::class, 'onClose']);
-        $client->on('Error',       [Client::class, 'onError']);
-        $client->on('Connect',     [Client::class, 'onConnect']);
-        $client->on('Receive',     [Client::class, 'onReceive']);
-        $client->on('BufferEmpty', [Client::class, 'onBufferEmpty']);
+    	go(function() use ($client) {
+			$cnnt = $client->connect(self::$config['server_host'], self::$config['server_port']);
 
-        // connect server
-        $client->connect(self::$config['server_host'], self::$config['server_port']);
+			if (!$cnnt) {
+				$msg = "swoole client error code: {$client->errCode}";
+
+				error_log($msg, 3, self::$config['debug_file']);
+				return;
+			}
+
+			$post = serialize($client->CiSwooleData);
+			$post .= self::$config['package_eof'];
+			$check = $client->send($post);
+
+			if ($check === FALSE) {
+				$msg = "swoole client error code: {$client->errCode}";
+
+				error_log($msg, 3, self::$config['debug_file']);
+			}
+
+			$result = $client->recv();
+			$result = str_replace(self::$config['package_eof'], '', $result);
+			$result = unserialize($result);
+			call_user_func_array($client->callback,[$client->response_to, $result]);
+//			var_dump($result);
+			$client->close();
+		});
     }
 
     // ------------------------------------------------------------------------------

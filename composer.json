@@ -1,15 +1,19 @@
 {
-    "name": "lanlin/codeigniter-swoole",
+    "name": "frenzzy-ekb/codeigniter-swoole",
     "type": "library",
     "description": "A swoole adapter for Codeigniter 3.0+",
     "keywords": ["Swoole", "Codeigniter", "Adapter", "Long Run", "Timers", "PHP", "Task"],
-    "homepage": "https://github.com/lanlin/codeigniter-swoole",
+    "homepage": "https://github.com/frenzzy-ekb/codeigniter-swoole",
     "suggests": "Using this adapter within CodeIgniter 3.0+ and Swoole 4.0.0+, PHP 7.0+ would be better.",
     "license": "MIT",
     "authors" : [
         {
             "name": "lanlin",
             "email": "lanlin1987@gmail.com"
+        },
+        {
+            "name": "frenzzy",
+            "email": "frenzzy_ekb@gmail.com"
         }
     ],
     "require": {

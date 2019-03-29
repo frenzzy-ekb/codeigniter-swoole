@@ -78,6 +78,7 @@ class Server
         $serv->on('Task',    [Server::class, 'onTask']);
 
         // start server
+		echo "Starting CISwoole Server\n";
         return $serv->start();
     }
 
@@ -153,7 +154,7 @@ class Server
     public static function onReceive(\Swoole\Server $serv, $fd, $reactorId, $data = '')
     {
         // close client
-        $serv->close($fd);
+//        $serv->close($fd);
 
         // format passed
         $data = str_replace(self::$config['package_eof'], '', $data);
@@ -175,13 +176,21 @@ class Server
            return;
         }
 
+        $data['fd'] = $fd;
+
         // start a task
         $serv->task($data);
     }
 
     // ------------------------------------------------------------------------------
 
-    /**
+	public static function prepareSend($data) {
+		$post = serialize($data);
+		$post .= self::$config['package_eof'];
+		return $post;
+	}
+
+	/**
      * listen on task
      *
      * @param \Swoole\Server $serv
@@ -202,11 +211,25 @@ class Server
             $_POST = $data['params'] ?? [];
 
             getCiSwooleConfig('starter');
+			$serv->send($data['fd'], self::prepareSend(['status' => 'success']));
         }
 
         // kill process
-        catch (\Throwable $e) { self::logs($e); }
-        finally { \Swoole\Process::kill(getmypid()); }
+        catch (\Throwable $e) {
+        	self::logs($e);
+        	$serv->send(
+        		$data['fd'],
+				self::prepareSend([
+					'status' => 'error',
+					'code' => $e->getCode(),
+					'msg' => $e->getMessage()
+				])
+			);
+        }
+        finally {
+			$serv->close($data['fd']);
+        	\Swoole\Process::kill(getmypid());
+        }
     }
 
     // ------------------------------------------------------------------------------

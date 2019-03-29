@@ -38,10 +38,12 @@ Let's see the code
 [
     'route'  => 'your/route/uri/to/a/method'
     'params' => ['test' => 666]
-]);
+], $fd, $callback);
 ```
 
 The `route` is used for find which method to be call as a task, and `params` is the parameters array that you may want to pass to the task.
+
+`fd` and `callback` params are used to notify about task errors.
 
 So, that's all of it!
 
