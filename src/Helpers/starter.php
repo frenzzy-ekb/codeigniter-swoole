@@ -247,6 +247,7 @@
     }
 	if ($e404)
     {
+		throw new Exception('Unknown route', 404);
         if ( ! empty($RTR->routes['404_override']))
         {
             if (sscanf($RTR->routes['404_override'], '%[^/]/%s', $error_class, $error_method) !== 2)
