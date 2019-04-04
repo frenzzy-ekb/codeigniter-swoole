@@ -63,7 +63,7 @@ class Client
      *     'params'  => [],               // params will be passed to your method
      * ];
      */
-    public static function send(array $data, $fd, callable $callback)
+    public static function send(array $data, $fd = NULL, callable $callback = NULL)
     {
         self::initConfig();
 
@@ -233,8 +233,8 @@ class Client
 			$result = $client->recv();
 			$result = str_replace(self::$config['package_eof'], '', $result);
 			$result = unserialize($result);
-			call_user_func_array($client->callback,[$client->response_to, $result]);
-//			var_dump($result);
+			if (!is_null($client->callback))
+				call_user_func_array($client->callback,[$client->response_to, $result]);
 			$client->close();
 		});
     }
