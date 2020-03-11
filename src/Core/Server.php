@@ -305,7 +305,7 @@ class Server
         $strings .= $msg->getTraceAsString();
 
         $time_nw  = date('Y-m-d H:i:s');
-        $content  = "\n== {$time_nw} ============================\n";
+        $content  = "\n== {$time_nw} ====CiSwoole\\Core\\Server============\n";
         $content .= "{$strings}";
         $content .= "\n===================================================\n\n";
 

@@ -142,9 +142,10 @@ class Client
      */
     public static function onError(\Swoole\Client $client)
     {
-        $msg = "swoole client error code: {$client->errCode}";
+        $msg = "Swoole client (onError) error code: {$client->errCode} socket_strerror: ".socket_strerror($client->errCode);
 
-        error_log($msg, 3, self::$config['debug_file']);
+        self::logs($msg);
+//        error_log($msg, 3, self::$config['debug_file']);
     }
 
     // ------------------------------------------------------------------------------
@@ -214,9 +215,11 @@ class Client
 			$cnnt = $client->connect(self::$config['server_host'], self::$config['server_port']);
 
 			if (!$cnnt) {
-				$msg = "swoole client error code: {$client->errCode}";
+//				$msg = "swoole client error code: {$client->errCode}";
+                $msg = "Swoole client (async connect fail) error code: {$client->errCode} socket_strerror: ".socket_strerror($client->errCode);
 
-				error_log($msg, 3, self::$config['debug_file']);
+                self::logs($msg);
+//				error_log($msg, 3, self::$config['debug_file']);
 				return;
 			}
 
@@ -225,9 +228,11 @@ class Client
 			$check = $client->send($post);
 
 			if ($check === FALSE) {
-				$msg = "swoole client error code: {$client->errCode}";
+//				$msg = "swoole client error code: {$client->errCode}";
+                $msg = "Swoole client (async send false) error code: {$client->errCode} socket_strerror: ".socket_strerror($client->errCode);
 
-				error_log($msg, 3, self::$config['debug_file']);
+                self::logs($msg);
+//				error_log($msg, 3, self::$config['debug_file']);
 			}
 
 			$result = $client->recv();
@@ -252,9 +257,10 @@ class Client
 
         if (!$cnnt)
         {
-            $msg = "swoole client error code: {$client->errCode}";
+            $msg = "Swoole client (sync connect fail) error code: {$client->errCode} socket_strerror: ".socket_strerror($client->errCode);
 
-            error_log($msg, 3, self::$config['debug_file']);
+            self::logs($msg);
+//            error_log($msg, 3, self::$config['debug_file']);
             return;
         }
 
@@ -264,14 +270,33 @@ class Client
 
         if ($check === false)
         {
-            $msg = "swoole client error code: {$client->errCode}";
-
-            error_log($msg, 3, self::$config['debug_file']);
+            $msg = "Swoole client (sync send false) error code: {$client->errCode} socket_strerror: ".socket_strerror($client->errCode);
+            self::logs($msg);
+//            error_log($msg, 3, self::$config['debug_file']);
         }
 
         $client->close();
     }
 
     // ------------------------------------------------------------------------------
+
+    /**
+     * log message to debug
+     *
+     * @param \Throwable $msg
+     */
+    private static function logs($msg)
+    {
+        $strings  = $msg;
+
+//        $strings .= $msg->getTraceAsString();
+
+        $time_nw  = date('Y-m-d H:i:s');
+        $content  = "\n{$time_nw} [CiSwoole\\Core\\Client]: ";
+        $content .= "{$strings}";
+        $content .= "\n===================================\n";
+
+        error_log($content, 3, self::$config['debug_file']);
+    }
 
 }
